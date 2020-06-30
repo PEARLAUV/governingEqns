@@ -13077,13 +13077,12 @@ div#notebook {
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="PEARL-Governing-Equations">PEARL Governing Equations<a class="anchor-link" href="#PEARL-Governing-Equations">&#182;</a></h1><h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2><ul>
+<h3 id="PEARL-Governing-Equations">PEARL Governing Equations<a class="anchor-link" href="#PEARL-Governing-Equations">&#182;</a></h3><h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2><ul>
 <li><a href="#Power">Power</a></li>
 <li><a href="#Propulsion">Propulsion</a></li>
-<li><a href="#Structure">Structure</a></li>
+<li><a href="#Hydrodynamics">Structure</a></li>
 <li><a href="#Communication">Communication</a></li>
-<li><a href="#Computing">Computing</a></li>
-<li><a href="#Navigation">Navigation</a></li>
+<li><a href="#Problem">Problem Formulation</a></li>
 </ul>
 <h2 id="Power">Power<a class="anchor-link" href="#Power">&#182;</a></h2><p>Four operations:</p>
 <ol>
@@ -13112,24 +13111,24 @@ P_{draw,recharge} = P_{hotel} - P_{recharge}
 <p>So long as the platform can harness more energy than it uses, this value will be negative, meaning the power draw is negative and the platform is actually recharging itself and storing energy.</p>
 <p>Assuming solar power is being used to recharge the platform, the power to recharge can be determined from considering the end-of-life performance of the solar panels</p>
 \begin{equation}
-P_{recharge} = \eta_s \phi_s \cos \left(\bar{\theta}\right) I_d (1-D)^L A_s
+P_{recharge} = \eta_s \phi_s \cos \left(\bar{\theta}\right) I_{deg} (1-d_{deg})^L_{solar} A_{solar}
 \end{equation}<p>where</p>
 <ul>
 <li>$\eta_s$ = the solar cell efficiency, nominally 27%, ranging from 15-44% (note that increasing solar cell efficiency increases cost per cell and degradation will change according to new solar cell material)</li>
-<li>$\phi_s$ = incident solar irradiation, determined by the location [w/m$^2$]</li>
+<li>$\phi_s$ = incident solar irradiation, determined by the location [W/m$^2$]</li>
 <li>$\bar{\theta}$ = average solar angle (from the vertical) over a day, nominally 55$^{\circ}$, ranging from 50.5-68$^{\circ}$. The nominal is a fixed, flat solar panel. It changes if the solar panel is slanted (requires orientation control) or gimbaled (requires solar array drive)</li>
-<li>$D$ = solar cell degradation, nominally set to 1%/year, ranging from 0.1-2%/year, depending on solar cell material.</li>
-<li>$I_d$ = inherent degradation, an efficiency parameter that describes the fraction of solar panel area that is actually solar cells, taken to be between 0.85-0.9. Value may also come from actual solar panel and use actual cell area from manufacturer. This term accounts for reduction in solar cell efficiency when you integrate it into an array. So could be due to the fact that the total panel area cannot be covered 100% in solar cells because of the interconnects and spacing between them. Can also use that term to account for if you expect any shadowing of cells by other components on the platformo for if the solar cells will be operating at a temperature different than what the efficiency is quoted at. According to SMAD for spacecraft it’s common to use $I_d$ = 0.72 (or ranging between 0.49 and 0.88). For this analysis, we neglect any shadowing issues for the servicing platform as well as efficiency degradations due to temperature (which are a bigger issue in space).</li>
-<li>$L_s$ = lifetime for solar panels, nominally 10 years, ranges from 1-25 years [yrs]</li>
-<li>$A_s$ = solar panel area [m$^2$]</li>
+<li>$d_{deg}$ = solar cell degradation, nominally set to 1%/year, ranging from 0.1-2%/year, depending on solar cell material.</li>
+<li>$I_{deg}$ = inherent degradation, an efficiency parameter that describes the fraction of solar panel area that is actually solar cells, taken to be between 0.85-0.9. Value may also come from actual solar panel and use actual cell area from manufacturer. This term accounts for reduction in solar cell efficiency when you integrate it into an array. So could be due to the fact that the total panel area cannot be covered 100% in solar cells because of the interconnects and spacing between them. Can also use that term to account for if you expect any shadowing of cells by other components on the platformo for if the solar cells will be operating at a temperature different than what the efficiency is quoted at. According to SMAD for spacecraft it’s common to use $I_{degradation}$ = 0.72 (or ranging between 0.49 and 0.88). For this analysis, we neglect any shadowing issues for the servicing platform as well as efficiency degradations due to temperature (which are a bigger issue in space).</li>
+<li>$L_{solar}$ = lifetime for solar panels, nominally 10 years, ranges from 1-25 years [yrs]</li>
+<li>$A_{solar}$ = solar panel area [m$^2$]</li>
 </ul>
 <p>Then the total energy collected to recharge the platform's batteries via solar power is
 \begin{equation}
-E_{recharge} = P_{recharge}t_r
+E_{recharge} = P_{recharge}t_{recharge}
 \end{equation}</p>
 <p>where</p>
 <ul>
-<li>$t_r$ = time the platform is recharging, nominally taken to be number of daylight hours [hrs]</li>
+<li>$t_{recharge}$ = time the platform is recharging, nominally taken to be number of daylight hours [hrs]</li>
 <li>making the assumption that the average solar angle over the day does not deviate much from $\bar{\theta}$ (to keep things simplistic for now)</li>
 </ul>
 
@@ -13138,18 +13137,20 @@ E_{recharge} = P_{recharge}t_r
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
 <span class="n">P_hotel</span> <span class="o">=</span> <span class="mi">50</span> <span class="c1">#Watts</span>
-<span class="n">eta_s_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.15</span><span class="p">,</span><span class="mf">0.44</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">eta_solar_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.15</span><span class="p">,</span><span class="mf">0.44</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span>
 <span class="n">phi_s</span> <span class="o">=</span> <span class="mi">800</span> <span class="c1"># W/m^2 in Massachusetts ?</span>
 <span class="n">theta_bar</span> <span class="o">=</span> <span class="mi">55</span> <span class="c1"># deg</span>
-<span class="n">D</span> <span class="o">=</span> <span class="mf">0.005</span>  <span class="c1"># degradation in decimal of percent per year</span>
-<span class="n">I_d</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="c1"># inherent degradation, efficiency parameter that describes the fraction of solar panel area that is actually solar cells</span>
-<span class="n">L_s</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1"># lifetime in years</span>
-<span class="n">t_r</span> <span class="o">=</span> <span class="mi">12</span> <span class="c1"># hours the platform is recharging (taken to be number of daylight hours)</span>
+<span class="n">d_deg</span> <span class="o">=</span> <span class="mf">0.005</span>  <span class="c1"># degradation in decimal of percent per year</span>
+<span class="n">I_deg</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="c1"># inherent degradation, efficiency parameter that describes the fraction of solar panel area that is actually solar cells</span>
+<span class="n">L_solar</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1"># lifetime in years</span>
+<span class="n">t_recharge</span> <span class="o">=</span> <span class="mi">12</span> <span class="c1"># hours the platform is recharging (taken to be number of daylight hours)</span>
 </pre></div>
 
     </div>
@@ -13174,7 +13175,7 @@ P_{service} = \frac{E_{AUV}}{t_{service}}\gamma
 <ul>
 <li>$E_{AUV}$ = AUV battery capacity [Wh]</li>
 <li>$t_{service}$ = duration of time that AUV is connected to platform recharging and offloading data (not necessary how long an AUV takes to be serviced on the platform, just the time that the platform will be in "service" mode) [hrs]</li>
-<li>$\gamma$ = AUV serviced per day (0.2 means 1 AUV every 5 hours). Nominally taken to be 0.2 AUV/day, ranging from 0.03 to 1 AUV/day (i.e. monthly to daily). [AUVs/hr]</li>
+<li>$\gamma$ = AUVs serviced per day (0.2 means 1 AUV every 5 hours). Nominally taken to be 0.2 AUV/day, ranging from 0.03 to 1 AUV/day (i.e. monthly to daily). [AUVs/hr]</li>
 </ul>
 
 </div>
@@ -13182,7 +13183,7 @@ P_{service} = \frac{E_{AUV}}{t_{service}}\gamma
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">E_AUV</span> <span class="o">=</span> <span class="mi">1900</span> <span class="c1"># Wh for Bluefin-9</span>
@@ -13232,10 +13233,10 @@ P_{draw,move} = P_{hotel} + P_{move}
 <h3 id="Sizing-solar-panels">Sizing solar panels<a class="anchor-link" href="#Sizing-solar-panels">&#182;</a></h3><p>The size of the solar panels can be determined from the daily energy needs of the platform, assuming that all energy needs are met by solar energy</p>
 \begin{eqnarray}
 E_{req} &amp;=&amp; E_{hotel} + E_{service} + E_{comms} + E_{move} \\
-E_{recharge} = E_{req} &amp;=&amp; P_{hotel}t_{mission} + P_{service}t_{service} + P_{comms}t_c + P_{move}t_m \\
-P_{recharge}t_r &amp;=&amp; P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d + P_{move}t_m \\
-\left( \eta_s \phi_s \cos \left(\bar{\theta}\right) I_d (1-D)^L A_s \right) t_r &amp;=&amp;  P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d + P_{move}t_m \\
-\Rightarrow A_s &amp;=&amp; \frac{\left( P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d + P_{move}t_m \right)}{\left( \eta_s \phi_s \cos \left(\bar{\theta}\right) I_d (1-D)^{L_s} t_r \right)}
+E_{recharge} = E_{req} &amp;=&amp; P_{hotel}t_{mission} + P_{service}t_{service} + P_{comms}t_{comms} + P_{move}t_{move} \\
+P_{recharge}t_{recharge} &amp;=&amp; P_{hotel}t_{mission} + E_{AUV}\gamma + P_{comms}t_{comms} + P_{move}t_{move} \\
+\left( \eta_s \phi_s \cos \left(\bar{\theta}\right) I_{deg} (1-D)^{L_{solar}} A_{solar} \right) t_{recharge} &amp;=&amp;  P_{hotel}t_{mission} + E_{AUV}\gamma + P_{comms}t_{comms} + P_{move}t_{move} \\
+\Rightarrow A_s &amp;=&amp; \frac{\left( P_{hotel}t_{mission} + E_{AUV}\gamma + P_{comms}t_{comms} + P_{move}t_{move} \right)}{\left( \eta_s \phi_s \cos \left(\bar{\theta}\right) I_{deg} (1-d_{deg})^{L_{solar}} t_{recharge} \right)}
 \end{eqnarray}<p>where</p>
 <ul>
 <li>$E_{hotel}$ = the total energy required to power the sensors onboard the platform to keep it active (hotel load) throughout the duration of the mission [Ws]</li>
@@ -13243,8 +13244,8 @@ P_{recharge}t_r &amp;=&amp; P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d +
 <li>$E_{comms}$ = the total energy required to transmit data during the mission [Ws]</li>
 <li>$E_{move}$ = the total energy required to move the platform during the mission [Ws]</li>
 <li>$t_{mission}$ = total duration of the mission of the platform, taken to be 1 day [s]</li>
-<li>$t_c$ = total time platform is transmitting data per mission [s]</li>
-<li>$t_m$ = total time platform is moving per mission [s]</li>
+<li>$t_{comms}$ = total time platform is transmitting data per mission [s]</li>
+<li>$t_{move}$ = total time platform is moving per mission [s]</li>
 </ul>
 
 </div>
@@ -13252,30 +13253,30 @@ P_{recharge}t_r &amp;=&amp; P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d +
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span> 
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span> 
 <span class="n">t_mission</span> <span class="o">=</span> <span class="mi">24</span> <span class="c1">#hours </span>
 
 <span class="c1"># will be determined from communication section</span>
 <span class="c1"># will feedback via MDO, but for now put back in by hand</span>
-<span class="n">P_data</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># W</span>
-<span class="n">t_d</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># hours</span>
+<span class="n">P_comms</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># W</span>
+<span class="n">t_comms</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># hours</span>
 
 <span class="c1"># will be determined from propulsion section</span>
 <span class="c1"># will feedback via MDO, but for now put back in by hand</span>
 <span class="n">P_move</span> <span class="o">=</span> <span class="mi">6824</span> <span class="c1"># W</span>
-<span class="n">t_m</span> <span class="o">=</span> <span class="mf">0.05</span><span class="o">*</span><span class="n">t_mission</span> <span class="c1"># assuming moving only 5% of the mission</span>
+<span class="n">t_move</span> <span class="o">=</span> <span class="mf">0.05</span><span class="o">*</span><span class="n">t_mission</span> <span class="c1"># assuming moving only 5% of the mission</span>
 
-<span class="n">numer</span> <span class="o">=</span> <span class="n">P_hotel</span> <span class="o">*</span> <span class="n">t_mission</span> <span class="o">+</span> <span class="n">P_service</span> <span class="o">*</span> <span class="n">t_service</span> <span class="o">+</span> <span class="n">P_data</span> <span class="o">*</span> <span class="n">t_d</span> <span class="o">+</span> <span class="n">P_move</span> <span class="o">*</span> <span class="n">t_m</span>
-<span class="n">denom</span> <span class="o">=</span> <span class="n">eta_s_vec</span><span class="o">*</span><span class="n">phi_s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">((</span><span class="n">theta_bar</span><span class="p">)))</span><span class="o">*</span><span class="n">I_d</span><span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">D</span><span class="p">)</span><span class="o">**</span><span class="n">L_s</span><span class="p">)</span><span class="o">*</span><span class="n">t_r</span>
+<span class="n">numer</span> <span class="o">=</span> <span class="n">P_hotel</span> <span class="o">*</span> <span class="n">t_mission</span> <span class="o">+</span> <span class="n">P_service</span> <span class="o">*</span> <span class="n">t_service</span> <span class="o">+</span> <span class="n">P_comms</span> <span class="o">*</span> <span class="n">t_comms</span> <span class="o">+</span> <span class="n">P_move</span> <span class="o">*</span> <span class="n">t_move</span>
+<span class="n">denom</span> <span class="o">=</span> <span class="n">eta_s_vec</span><span class="o">*</span><span class="n">phi_s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">((</span><span class="n">theta_bar</span><span class="p">)))</span><span class="o">*</span><span class="n">I_deg</span><span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">d_deg</span><span class="p">)</span><span class="o">**</span><span class="n">L_solar</span><span class="p">)</span><span class="o">*</span><span class="n">t_recharge</span>
 
 <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">gamma</span><span class="p">)):</span>
-    <span class="n">A_s_vec</span> <span class="o">=</span> <span class="n">numer</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">/</span><span class="n">denom</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">eta_s_vec</span><span class="p">,</span><span class="n">A_s_vec</span><span class="p">,</span><span class="n">label</span><span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">gamma</span><span class="p">[</span><span class="n">g</span><span class="p">])</span><span class="o">+</span><span class="s2">&quot; AUVs/day&quot;</span><span class="p">)</span>
+    <span class="n">A_solar_vec</span> <span class="o">=</span> <span class="n">numer</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">/</span><span class="n">denom</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">eta_solar_vec</span><span class="p">,</span><span class="n">A_solar_vec</span><span class="p">,</span><span class="n">label</span><span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">gamma</span><span class="p">[</span><span class="n">g</span><span class="p">])</span><span class="o">+</span><span class="s2">&quot; AUVs/day&quot;</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Solar Cell Efficiency $\eta_s$&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Required Solar Panel Area, $A_s$ [m$^2$]&#39;</span><span class="p">)</span>
@@ -13283,11 +13284,11 @@ P_{recharge}t_r &amp;=&amp; P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d +
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
-<span class="n">A_s</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">A_s_vec</span><span class="p">)</span> <span class="c1"># take the maximum area for now, which occurs for 4 AUVs/day</span>
+<span class="n">A_solar</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">A_solar_vec</span><span class="p">)</span> <span class="c1"># take the maximum area for now, which occurs for 4 AUVs/day</span>
 <span class="n">eta_s</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">eta_s_vec</span><span class="p">)</span> <span class="c1"># take the minimum efficiency for now</span>
 
-<span class="n">P_recharge</span> <span class="o">=</span> <span class="n">eta_s</span><span class="o">*</span><span class="n">phi_s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">((</span><span class="n">theta_bar</span><span class="p">)))</span><span class="o">*</span><span class="n">I_d</span><span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">D</span><span class="p">)</span><span class="o">**</span><span class="n">L_s</span><span class="p">)</span><span class="o">*</span><span class="n">A_s</span> <span class="c1"># W</span>
-<span class="n">E_req</span> <span class="o">=</span> <span class="n">P_recharge</span><span class="o">*</span><span class="n">t_r</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">60</span> <span class="c1"># multiplying by 3600 because t_r in hours</span>
+<span class="n">P_recharge</span> <span class="o">=</span> <span class="n">eta_s</span><span class="o">*</span><span class="n">phi_s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">((</span><span class="n">theta_bar</span><span class="p">)))</span><span class="o">*</span><span class="n">I_deg</span><span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">D</span><span class="p">)</span><span class="o">**</span><span class="n">L_solar</span><span class="p">)</span><span class="o">*</span><span class="n">A_solar</span> <span class="c1"># W</span>
+<span class="n">E_req</span> <span class="o">=</span> <span class="n">P_recharge</span><span class="o">*</span><span class="n">t_recharge</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">60</span> <span class="c1"># multiplying by 3600 because t_r in hours</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">E_req</span><span class="p">)</span> <span class="c1"># Ws, a.k.a Joules</span>
 </pre></div>
 
@@ -13306,8 +13307,10 @@ P_{recharge}t_r &amp;=&amp; P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d +
 
 
 
-<div class="output_text output_subarea ">
-<pre>&lt;Figure size 640x480 with 1 Axes&gt;</pre>
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+"
+>
 </div>
 
 </div>
@@ -13332,16 +13335,16 @@ P_{recharge}t_r &amp;=&amp; P_{hotel}t_{mission} + E_{AUV}\gamma + P_{data}t_d +
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Propulsion">Propulsion<a class="anchor-link" href="#Propulsion">&#182;</a></h2><p>In order for the platform to move, it needs to overcome drag. The energy required to overcome drag is</p>
 \begin{equation}
-E_{move} = \frac{\rho C_d S_w V^3}{2 \eta_m}t_m
+E_{move} = \frac{\rho C_d S_w V_{PEARL}^3}{2 \eta_m}t_{move}
 \end{equation}<p>where</p>
 <ul>
 <li>$E_{move}$ = energy required for propulsion to overcome drag [Ws]</li>
 <li>$\rho$ = density of water [kg/m$^3$]</li>
 <li>$C_d$ = drag coefficient </li>
 <li>$S_w$ = wetted surface area of platform [m$^2$]</li>
-<li>$V$ = velocity of platform [m/s]</li>
+<li>$V_{PEARL}$ = velocity of platform [m/s]</li>
 <li>$\eta_m$ = propulsion efficiency</li>
-<li>$t_m$ = time of motion [s]</li>
+<li>$t_{move}$ = time of motion [s]</li>
 </ul>
 <p>The power to move the platform is thus given by
 \begin{equation}
@@ -13353,12 +13356,12 @@ P_{move} = \frac{\rho C_d S_w V^3}{2 \eta_m}
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">rho</span> <span class="o">=</span> <span class="mf">1023.6</span> <span class="c1"># density of seawater [kg/m^3]</span>
 <span class="n">C_d</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># estimate drag coefficient (a square flat plate at 90 deg to the flow is 1.17)</span>
-<span class="n">S_w</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1"># will technically need to determine from A_s and other structural needs... assume something for now</span>
+<span class="n">S_w</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1"># will technically need to determine from A_solar and other structural needs... assume something for now</span>
 <span class="n">V</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># [m/s]</span>
 <span class="n">eta_m</span> <span class="o">=</span> <span class="mf">0.75</span> <span class="c1"># estimated, need to determine from motors?</span>
 
@@ -13412,7 +13415,7 @@ E_{battery} = \frac{E_{req}}{\left(DOD\right) N \eta_{battery}}
 </ul>
 <p>The volme of the batteries on board is given by
 \begin{equation}
-V = E_{battery} \nu_{battery}
+V_{battery} = E_{battery} \nu_{battery}
 \end{equation}</p>
 <p>where</p>
 <ul>
@@ -13424,7 +13427,7 @@ V = E_{battery} \nu_{battery}
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">E_AUV_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1900</span><span class="p">,</span> <span class="mi">13500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span> <span class="c1"># in Wh, AUV energy demand per recharge</span>
@@ -13436,7 +13439,7 @@ V = E_{battery} \nu_{battery}
 <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">mu_battery</span><span class="p">)):</span>
-    <span class="n">E_battery</span> <span class="o">=</span> <span class="p">(</span><span class="n">E_AUV_vec</span><span class="o">+</span><span class="n">P_hotel</span><span class="o">*</span><span class="n">t_r</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">DOD</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">*</span><span class="n">N</span><span class="o">*</span><span class="n">eta_battery</span><span class="p">)</span>
+    <span class="n">E_battery</span> <span class="o">=</span> <span class="p">(</span><span class="n">E_AUV_vec</span><span class="o">+</span><span class="n">P_hotel</span><span class="o">*</span><span class="n">t_recharge</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">DOD</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span><span class="o">*</span><span class="n">N</span><span class="o">*</span><span class="n">eta_battery</span><span class="p">)</span>
     <span class="n">m_battery</span> <span class="o">=</span> <span class="n">E_battery</span><span class="o">/</span><span class="n">mu_battery</span><span class="p">[</span><span class="n">jj</span><span class="p">]</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">E_AUV_vec</span><span class="p">,</span><span class="n">m_battery</span><span class="p">)</span>
 
@@ -13800,7 +13803,7 @@ X_5(t) = (I_{55} + A_{55}) \ddot{\xi}_5 + (A_{51} + I_{51}) \ddot{\xi}_1 + B_{55
 <li>$I_{51} = I_{15}$ is the body-inertia coefficient of coupled surge-pitch, determined previously.</li>
 <li>$B_{55}$ is the pitch damping coefficient</li>
 <li>$B_{51} = B_{15}$ is the coupled surge-pitch damping coefficient determined previously</li>
-<li>$C_{55}$ is the restoring moment in pitch $C_{55} = \rho g \forall \left(\frac{I_{11}}{\forall} + KB - KG \right)$.</li>
+<li>$C_{55}$ is the restoring moment in pitch $C_{55} = \rho g \forall \left(\frac{S_{11}}{\forall} + KB - KG \right)$.</li>
 </ul>
 <p>As with surge, the pitch, the excitation force can be determined by G. I. Tayor's formula:
 \begin{eqnarray}
@@ -13841,10 +13844,14 @@ A_{55} &amp;=&amp; \int_0^{h_f+t_s+t_d} a_{33} z^2 dz\\
 \end{equation}<p>The moment of inertia of the platform in pitch can be approximated to be the moment of inertia of a point mass at the center of gravity rotating about the SWL:</p>
 \begin{equation}
 \boxed{I_{55} = m_{platform} z_G^2}
-\end{equation}<p>The restoring moment in pitch is given by $C_{55} = \rho g \forall \left(\frac{I_{11}}{\forall} + KB - KG \right)$, thus</p>
+\end{equation}<p>The restoring moment in pitch is given by $C_{55} = \rho g \forall \left(\frac{S_{11}}{\forall} + KB - KG \right)$, where</p>
 \begin{equation}
-\boxed{C_{55} = \rho g \left( \frac{\pi}{4} \left(D_f^2 h_f + D_s^2 t_s + D_d^2 t_d \right) \right) \left(\frac{D_f^4}{16 \left(D_f^2 h_f + D_s^2 t_s + D_d^2 t_d \right)} - \frac{h_f + t_s + t_d}{2} + z_G \right)}.
-\end{equation}
+S_{11} = \iint_{S_f} y dS = \int_{0}^{2\pi} \int_{0}^{D_f/2} r^2 \sin^2{\theta} r dr d \theta = \frac{\pi D_f^4}{64}
+\end{equation}<p>Thus,
+\begin{equation}
+\boxed{C_{55} = \rho g \left( \frac{\pi}{4} \left(D_f^2 h_f + D_s^2 t_s + D_d^2 t_d \right) \right) \left(\frac{\pi D_f^4}{64 \left( \frac{\pi}{4} \left(D_f^2 h_f + D_s^2 t_s + D_d^2 t_d \right) \right)} - \frac{h_f + t_s + t_d}{2} + z_G \right)}.
+\end{equation}</p>
+
 </div>
 </div>
 </div>
@@ -13920,6 +13927,10 @@ f = \frac{\lambda}{c}
 <li>$M$ is the margin used to account for missed passes</li>
 <li>$F$ the fractional reduction in viewing time due to a satellite passing at an angle away from the ground station (not directly overhead).</li>
 </ul>
+<p>Given the data to be transmitted per AUV, $D_{AUV}$ and the data that can be transmitted per mission from PEARL to the satellite, $D$, memory storage required on-board PEARL is
+\begin{equation}
+C_{storage} = \begin{cases} 0, &amp; D_{AUV}\gamma-D \leq 0 \\ D_{AUV}\gamma-D, \end{cases}
+\end{equation}</p>
 
 </div>
 </div>
@@ -13927,29 +13938,31 @@ f = \frac{\lambda}{c}
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Computing">Computing<a class="anchor-link" href="#Computing">&#182;</a></h2>
+<h2 id="Problem">Problem<a class="anchor-link" href="#Problem">&#182;</a></h2><h3 id="Master-Table">Master Table<a class="anchor-link" href="#Master-Table">&#182;</a></h3><p>In order to begin formulating the problem, we develop a master table to encompass all of the design variables, depdenent variables, constraints, objective functions, and parameters.</p>
+<p><img src="img/masterTable.png" alt="Master Table"></p>
+
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Navigation">Navigation<a class="anchor-link" href="#Navigation">&#182;</a></h2>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
+<h3 id="N2-Diagram">N2 Diagram<a class="anchor-link" href="#N2-Diagram">&#182;</a></h3><p>We also formulate an N2 diagram to better understand how the various modules will work together and the iterative loops necessary. The main iterative loop is checking that the hydrodynamic response of the platform with the given geometry is stable and does not resonant in most ocean waves.</p>
+<p>The output we desire is the OPEX given in USD/(AUV mission hour). The standard currently is 30,000 USD per 8 hour AUV mission, so USD 3,750/(AUV mission hour)</p>
+<p><img src="img/N2diagram.png" alt="N2 Diagram"></p>
 
-    </div>
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Block-Diagram">Block Diagram<a class="anchor-link" href="#Block-Diagram">&#182;</a></h3><p>We also formulate a block to better understand how the various modules will work together and the iterative loops necessary. The main iterative loop is checking that the hydrodynamic response of the platform with the given geometry is stable and does not resonant in most ocean waves.</p>
+<p>The output we desire is the OPEX given in USD/(AUV mission hour). The standard currently is 30,000 USD per 8 hour AUV mission, so USD 3,750/(AUV mission hour)</p>
+<p><img src="img/PEARL_BlockDiagram.png" alt="Block Diagram"></p>
 
+</div>
+</div>
 </div>
     </div>
   </div>
